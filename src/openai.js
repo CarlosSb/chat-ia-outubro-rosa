@@ -1,5 +1,7 @@
 // Serviços OpenAI (Chat, Whisper, Vision, TTS)
 const { OpenAI } = require('openai');
+const fs = require('fs');
+const tmp = require('tmp');
 const config = require('./config');
 
 const openai = new OpenAI({
@@ -33,9 +35,26 @@ async function processTextMessage(message, history) {
 
 // Processar áudio (transcrição)
 async function processAudioMessage(media) {
+  let tempFile = null;
   try {
+    // Verificar se media existe e tem dados
+    if (!media || !media.data) {
+      throw new Error('Media ou dados não disponíveis');
+    }
+
+    // Criar arquivo temporário
+    tempFile = tmp.fileSync({ postfix: '.ogg' });
+
+    // Salvar dados base64 como arquivo
+    const buffer = Buffer.from(media.data, 'base64');
+    fs.writeFileSync(tempFile.name, buffer);
+
+    // Criar stream para OpenAI
+    const audioStream = fs.createReadStream(tempFile.name);
+
+    // Transcrever com Whisper
     const transcription = await openai.audio.transcriptions.create({
-      file: Buffer.from(media.data, 'base64'),
+      file: audioStream,
       model: config.openai.whisperModel,
       language: 'pt',
     });
@@ -44,6 +63,15 @@ async function processAudioMessage(media) {
   } catch (error) {
     console.error(config.prompts.logErrors.audioTranscription, error);
     throw error;
+  } finally {
+    // Limpar arquivo temporário
+    if (tempFile) {
+      try {
+        fs.unlinkSync(tempFile.name);
+      } catch (cleanupError) {
+        console.warn('Erro ao limpar arquivo temporário:', cleanupError);
+      }
+    }
   }
 }
 
@@ -74,13 +102,13 @@ async function processImageMessage(media) {
 // Gerar TTS
 async function generateTTS(text) {
   try {
-    const mp3 = await openai.audio.speech.create({
+    const speechResponse = await openai.audio.speech.create({
       model: 'tts-1',
       voice: config.openai.ttsVoice,
       input: text,
     });
 
-    return Buffer.from(await mp3.arrayBuffer());
+    return Buffer.from(await speechResponse.arrayBuffer());
   } catch (error) {
     console.error(config.prompts.logErrors.ttsGeneration, error);
     return null;

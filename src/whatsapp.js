@@ -34,7 +34,8 @@ async function sendResponse(message, text, audioBuffer = null) {
     await message.reply(text);
 
     if (audioBuffer) {
-      const audioMedia = MessageMedia.fromFilePath(null, null, { data: audioBuffer, mimetype: 'audio/mpeg' });
+      // Usar fromBuffer em vez de fromFilePath para evitar erro de path null
+      const audioMedia = MessageMedia.fromBuffer(audioBuffer, 'audio/ogg');
       await message.reply(audioMedia);
     }
 
@@ -83,12 +84,21 @@ async function handleMessage(message) {
       responseText = await openai.processTextMessage(message, history);
     } else if (message.type === 'audio' || message.type === 'ptt') {
       const media = await message.downloadMedia();
-      if (!media) {
+      if (!media || !media.data) {
         responseText = config.prompts.errors.audioDownloadError;
       } else {
-        const transcription = await openai.processAudioMessage(media);
-        const textMessage = { ...message, body: transcription };
-        responseText = await openai.processTextMessage(textMessage, history);
+        try {
+          const transcription = await openai.processAudioMessage(media);
+          const textMessage = { ...message, body: transcription };
+          responseText = await openai.processTextMessage(textMessage, history);
+        } catch (error) {
+          console.error('Erro específico no processamento de áudio:', error);
+          if (error.status === 400) {
+            responseText = 'Áudio inválido ou muito longo. Tente um áudio mais curto.';
+          } else {
+            responseText = config.prompts.errors.audioProcessingError;
+          }
+        }
       }
     } else if (message.type === 'image') {
       const media = await message.downloadMedia();
@@ -101,8 +111,13 @@ async function handleMessage(message) {
       responseText = config.prompts.errors.invalidMessage;
     }
 
-    // Gerar áudio TTS
-    const audioBuffer = await openai.generateTTS(responseText);
+    // Gerar áudio TTS (com try-catch para não falhar se TTS der erro)
+    let audioBuffer = null;
+    try {
+      audioBuffer = await openai.generateTTS(responseText);
+    } catch (ttsError) {
+      console.warn('TTS falhou, enviando apenas texto:', ttsError.message);
+    }
 
     // Enviar resposta
     await sendResponse(message, responseText, audioBuffer);
