@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: bot-novembro-rosa
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bot-novembro-db
+          property: connectionString
+      - key: PORT
+        value: 10000
+    healthCheckPath: /health

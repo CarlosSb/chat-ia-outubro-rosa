@@ -1,15 +1,34 @@
 {
   "name": "novembro-rosa",
   "version": "1.0.0",
-  "description": "",
+  "description": "Bot WhatsApp POC para campanha Novembro Rosa com IA",
   "main": "index.js",
   "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "ia",
+    "novembro-rosa",
+    "saude"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "whatsapp-web.js": "^1.23.0",
+    "openai": "^4.0.0",
+    "pg": "^8.11.0",
+    "dotenv": "^16.3.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
