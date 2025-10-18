@@ -26,12 +26,13 @@ function getRandomDelay() {
 }
 
 // Enviar resposta com delay
-async function sendResponse(message, text, audioBuffer = null) {
+async function sendResponse(message, text=null, audioBuffer = null) {
   try {
     const delay = getRandomDelay();
     await new Promise(resolve => setTimeout(resolve, delay));
-
-    await message.reply(text);
+    if(text){
+      await message.reply(text);
+    }
 
     if (audioBuffer) {
       // Usar fromBuffer em vez de fromFilePath para evitar erro de path null
@@ -96,6 +97,8 @@ async function handleMessage(message) {
           console.error('Erro específico no processamento de áudio:', error);
           if (error.status === 400) {
             responseText = 'Áudio inválido ou muito longo. Tente um áudio mais curto.';
+          } else if (error.message && error.message.includes('transcription')) {
+            responseText = 'Não consegui entender bem o áudio. Pode repetir sua pergunta por escrito?';
           } else {
             responseText = config.prompts.errors.audioProcessingError;
           }
@@ -120,8 +123,22 @@ async function handleMessage(message) {
       console.warn('TTS falhou, enviando apenas texto:', ttsError.message);
     }
 
-    // Enviar resposta
-    await sendResponse(message, responseText, audioBuffer);
+    // Lógica de resposta baseada no tipo de input (mirror)
+    if (message.type === 'audio' || message.type === 'ptt') {
+      // Input áudio → resposta só TTS (econômico e natural)
+      if (audioBuffer) {
+        await sendResponse(message, null, audioBuffer); // Só áudio
+        console.log('✅ Resposta enviada: só áudio (input era áudio)');
+      } else {
+        // TTS falhou para áudio → enviar texto (como se fosse input texto)
+        await sendResponse(message, responseText, null);
+        console.log('✅ Resposta enviada: texto (TTS falhou para input áudio)');
+      }
+    } else {
+      // Input texto/imagem → resposta texto + TTS
+      await sendResponse(message, responseText, audioBuffer);
+      console.log('✅ Resposta enviada: texto + áudio');
+    }
 
   } catch (error) {
     console.error(config.prompts.logErrors.messageHandler, error);

@@ -7,7 +7,7 @@ module.exports = {
     apiKey: process.env.OPENAI_API_KEY,
     model: 'gpt-4o-mini',
     whisperModel: 'whisper-1',
-    ttsVoice: 'alloy',
+    ttsVoice: process.env.TTS_VOICE || 'alloy',
     maxTokens: 500,
     temperature: 0.7,
   },
