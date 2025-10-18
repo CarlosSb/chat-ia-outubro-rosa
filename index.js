@@ -1,9 +1,9 @@
 // Arquivo principal do Bot WhatsApp Novembro Rosa
 const express = require('express');
 const crypto = require('crypto');
-const config = require('./config');
-const db = require('./database');
-const whatsapp = require('./whatsapp');
+const config = require('./src/config');
+const db = require('./src/database');
+const whatsapp = require('./src/whatsapp');
 
 const app = express();
 app.use(express.json());
