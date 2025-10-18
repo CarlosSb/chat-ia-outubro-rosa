@@ -1,7 +1,7 @@
 {
-  "name": "novembro-rosa",
+  "name": "outubro-rosa",
   "version": "1.0.0",
-  "description": "Bot WhatsApp POC para campanha Novembro Rosa com IA",
+  "description": "Bot WhatsApp POC para campanha Outubro Rosa com IA",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -12,7 +12,7 @@
     "whatsapp",
     "bot",
     "ia",
-    "novembro-rosa",
+    "outubro-rosa",
     "saude"
   ],
   "author": "",

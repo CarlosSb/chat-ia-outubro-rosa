@@ -1,4 +1,4 @@
-# Bot WhatsApp - Campanha Novembro Rosa
+# Bot WhatsApp - Campanha Outubro Rosa
 
 ## Objetivos
 
@@ -20,7 +20,7 @@ Conscientizar a população sobre a importância da prevenção e detecção pre
 3. Faça perguntas simples, como:
    - "Como fazer autoexame?"
    - "Quais são os sintomas?"
-   - "O que é Novembro Rosa?"
+   - "O que é Outubro Rosa?"
 4. Envie áudios ou imagens se precisar (limite: 1 por minuto).
 
 ## Exemplos de Uso

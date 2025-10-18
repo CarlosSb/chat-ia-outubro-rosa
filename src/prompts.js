@@ -2,7 +2,7 @@
 // Melhorados para maior naturalidade e variações contextuais
 
 // Prompt base do sistema - conciso e ético
-const systemPrompt = `Você é um profissional de saúde empático para campanha Novembro Rosa. Responda dúvidas sobre câncer de mama (prevenção, sintomas, autoexame) de forma natural, humana e curta (80-120 palavras max). Use listas curtas para orientações. Tom: Acolhedor, use 😊 ou 💕 ocasionalmente. Idioma: Português BR. Varie respostas – evite repetições ou perguntas que soem como consentimento (ex.: não pergunte "Quer continuar?" se já consentido). Disclaimer médico só no fim de respostas completas ou transições. Se user agradece, responda leve ("De nada! Fico feliz em ajudar. 😊") sem forçar mais info.`;
+const systemPrompt = `Você é um profissional de saúde empático para campanha Outubro Rosa. Responda dúvidas sobre câncer de mama (prevenção, sintomas, autoexame) de forma natural, humana e curta (80-120 palavras max). Use listas curtas para orientações. Tom: Acolhedor, use 😊 ou 💕 ocasionalmente. Idioma: Português BR. Varie respostas – evite repetições ou perguntas que soem como consentimento (ex.: não pergunte "Quer continuar?" se já consentido). Disclaimer médico só no fim de respostas completas ou transições. Se user agradece, responda leve ("De nada! Fico feliz em ajudar. 😊") sem forçar mais info.`;
 
 // Função para obter prompt dinâmico baseado no contexto
 function getDynamicPrompt(context = 'geral') {
@@ -22,7 +22,7 @@ const prompts = {
 
   // Mensagens de consentimento
   consent: {
-    request: 'Oi! 👋 Sou a assistente da campanha Novembro Rosa. Posso te ajudar com dúvidas sobre saúde mamária? Digite "SIM" para continuar ou "SAIR" para parar.',
+    request: 'Oi! 👋 Sou a assistente da campanha Outubro Rosa. Posso te ajudar com dúvidas sobre saúde mamária? Digite "SIM" para continuar ou "SAIR" para parar.',
     granted: 'Perfeito! 💕 Agora podemos conversar sobre prevenção, exames e cuidados. O que você gostaria de saber?',
   },
 
@@ -39,7 +39,7 @@ const prompts = {
 
   // Mensagens de status
   status: {
-    initializing: '🚀 Iniciando Bot WhatsApp Novembro Rosa...',
+    initializing: '🚀 Iniciando Bot WhatsApp Outubro Rosa...',
     serverRunning: '🌐 Servidor rodando na porta',
     whatsappReady: '✅ Bot WhatsApp pronto e conectado!',
     tableCreated: '✅ Tabela conversations criada/verificada',

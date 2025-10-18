@@ -1,4 +1,4 @@
-// Arquivo principal do Bot WhatsApp Novembro Rosa
+// Arquivo principal do Bot WhatsApp Outubro Rosa
 const express = require('express');
 const crypto = require('crypto');
 const cron = require('node-cron');
@@ -45,7 +45,7 @@ app.get('/config', authenticateToken, (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuração WhatsApp - Bot Novembro Rosa</title>
+    <title>Configuração WhatsApp - Bot Outubro Rosa</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }

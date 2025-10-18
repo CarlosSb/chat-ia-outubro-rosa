@@ -1,4 +1,4 @@
-# Plano Detalhado para Arquivos de Código - Bot WhatsApp Novembro Rosa
+# Plano Detalhado para Arquivos de Código - Bot WhatsApp Outubro Rosa
 
 Este documento detalha o plano para criação dos arquivos de código restantes, que devem ser implementados em um modo que permita edição de arquivos não-.md (ex.: Code mode).
 
@@ -10,7 +10,7 @@ Atualizar com dependências e scripts:
 {
   "name": "novembro-rosa",
   "version": "1.0.0",
-  "description": "Bot WhatsApp POC para campanha Novembro Rosa com IA",
+  "description": "Bot WhatsApp POC para campanha Outubro Rosa com IA",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

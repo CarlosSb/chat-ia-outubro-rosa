@@ -21,7 +21,7 @@ Este documento explica como obter as chaves necessárias para o funcionamento do
 1. Acesse o [Render Dashboard](https://dashboard.render.com).
 2. Clique em "New > Postgres".
 3. Selecione o plano "Free".
-4. Dê um nome ao banco, ex.: `bot-novembro-db`.
+4. Dê um nome ao banco, ex.: `bot-outubro-db`.
 5. Crie o banco.
 6. Na aba "Connections", copie a `INTERNAL_DB_URL`.
 7. Adicione essa URL na variável `DATABASE_URL` no arquivo `.env`.

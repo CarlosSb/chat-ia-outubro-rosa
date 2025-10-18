@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: bot-novembro-rosa
+    name: bot-outubro-rosa
     env: node
     buildCommand: npm install
     startCommand: npm start

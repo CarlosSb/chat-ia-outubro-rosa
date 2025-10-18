@@ -1,6 +1,6 @@
-# Bot WhatsApp Novembro Rosa
+# Bot WhatsApp Outubro Rosa
 
-Este é um projeto de POC (Proof of Concept) para um bot WhatsApp não oficial que utiliza IA para fornecer orientações éticas sobre conscientização do câncer de mama durante a campanha Novembro Rosa. O bot age como um profissional de saúde, respondendo dúvidas sobre prevenção, sintomas e autoexame, sempre com o disclaimer de consultar um médico para diagnóstico.
+Este é um projeto de POC (Proof of Concept) para um bot WhatsApp não oficial que utiliza IA para fornecer orientações éticas sobre conscientização do câncer de mama durante a campanha Outubro Rosa. O bot age como um profissional de saúde, respondendo dúvidas sobre prevenção, sintomas e autoexame, sempre com o disclaimer de consultar um médico para diagnóstico.
 
 ## Objetivo
 

@@ -6,6 +6,11 @@ const config = require('./config');
 const db = require('./database');
 const openai = require('./openai');
 
+// Variáveis de estado do WhatsApp
+let isConnected = false;
+let connectedNumber = null;
+let currentQrCode = null;
+
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
   puppeteer: {
