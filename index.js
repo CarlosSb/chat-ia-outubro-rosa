@@ -1,6 +1,8 @@
 // Arquivo principal do Bot WhatsApp Novembro Rosa
 const express = require('express');
 const crypto = require('crypto');
+const cron = require('node-cron');
+const fetch = require('node-fetch');
 const config = require('./src/config');
 const db = require('./src/database');
 const whatsapp = require('./src/whatsapp');
@@ -225,6 +227,16 @@ async function initializeApp() {
     app.listen(config.server.port, () => {
       console.log(`${config.prompts.status.serverRunning} ${config.server.port}`);
       console.log(config.prompts.status.devTip);
+    });
+
+    // Estratégia anti-sleep: Ping keep-alive a cada 14 minutos
+    cron.schedule('*/14 * * * *', async () => {
+      try {
+        await fetch(`http://localhost:${config.server.port}/health`);
+        console.log('Ping enviado');
+      } catch (error) {
+        console.error('Erro no ping keep-alive:', error);
+      }
     });
 
   } catch (error) {

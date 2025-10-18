@@ -179,6 +179,11 @@ function setupEventHandlers() {
     isConnected = false;
     connectedNumber = null;
     currentQrCode = null;
+    console.log('Reconectando...');
+    setTimeout(() => {
+      client.destroy();
+      client.initialize();
+    }, 5000);
   });
 
   client.on('authenticated', () => {
