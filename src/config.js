@@ -59,5 +59,7 @@ module.exports = {
   },
 
   // Prompts importados do módulo prompts.js
-  prompts: require('./prompts'),
+  prompts: require('./prompts').prompts,
+  // Prompt do sistema (exportado para compatibilidade)
+  systemPrompt: require('./prompts').systemPrompt,
 };

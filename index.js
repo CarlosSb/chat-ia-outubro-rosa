@@ -2,7 +2,6 @@
 const express = require('express');
 const crypto = require('crypto');
 const cron = require('node-cron');
-const fetch = require('node-fetch');
 const config = require('./src/config');
 const db = require('./src/database');
 const whatsapp = require('./src/whatsapp');

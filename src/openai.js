@@ -3,25 +3,45 @@ const { OpenAI } = require('openai');
 const fs = require('fs');
 const tmp = require('tmp');
 const config = require('./config');
+const { getDynamicPrompt } = require('./prompts');
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
 });
 
+// Detectar contexto da mensagem
+function detectMessageContext(messageBody) {
+  const text = messageBody.toLowerCase();
+
+  // Palavras de agradecimento
+  const agradecimentos = ['obrigado', 'obrigada', 'agradeço', 'valeu', 'muito obrigado', 'muito obrigada', 'thanks', 'thank you'];
+  if (agradecimentos.some(palavra => text.includes(palavra))) {
+    return 'agradecimento';
+  }
+
+  return 'geral';
+}
+
 // Processar mensagem de texto
 async function processTextMessage(message, history) {
   try {
-    // Construir contexto
-    let context = config.prompts.systemPrompt + '\n\nHistórico da conversa:\n';
+    // Detectar contexto da mensagem
+    const context = detectMessageContext(message.body);
+
+    // Usar prompt dinâmico baseado no contexto
+    const dynamicPrompt = getDynamicPrompt(context);
+
+    // Construir contexto completo
+    let fullContext = dynamicPrompt + '\n\nHistórico da conversa:\n';
     history.forEach(item => {
-      context += `Usuário: ${item.content}\n`;
-      if (item.response) context += `Bot: ${item.response}\n`;
+      fullContext += `Usuário: ${item.content}\n`;
+      if (item.response) fullContext += `Bot: ${item.response}\n`;
     });
-    context += `Usuário: ${message.body}\nBot:`;
+    fullContext += `Usuário: ${message.body}\nBot:`;
 
     const completion = await openai.chat.completions.create({
       model: config.openai.model,
-      messages: [{ role: 'user', content: context }],
+      messages: [{ role: 'user', content: fullContext }],
       max_tokens: config.openai.maxTokens,
       temperature: config.openai.temperature,
     });
