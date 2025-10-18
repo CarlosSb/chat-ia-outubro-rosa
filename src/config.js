@@ -29,7 +29,7 @@ module.exports = {
 
   // Rate limiting
   rateLimit: {
-    maxMessagesPerHour: 5,
+    maxMessagesPerHour: 20,
   },
 
   // Anti-ban

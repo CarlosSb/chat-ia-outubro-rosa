@@ -35,7 +35,7 @@ async function sendResponse(message, text, audioBuffer = null) {
 
     if (audioBuffer) {
       // Usar fromBuffer em vez de fromFilePath para evitar erro de path null
-      const audioMedia = MessageMedia.fromBuffer(audioBuffer, 'audio/ogg');
+      const audioMedia = new MessageMedia('audio/ogg', audioBuffer.toString('base64'));
       await message.reply(audioMedia);
     }
 
@@ -50,10 +50,11 @@ async function sendResponse(message, text, audioBuffer = null) {
 async function handleMessage(message) {
   try {
     // Verificar horário comercial
+    /*
     if (!isBusinessHours()) {
       console.log(config.prompts.status.businessHoursIgnored);
       return;
-    }
+    }*/
 
     const userId = message.from;
 
