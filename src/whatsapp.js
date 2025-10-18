@@ -1,6 +1,7 @@
 // Gerenciamento do WhatsApp client
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const qrCodeLib = require('qrcode');
 const config = require('./config');
 const db = require('./database');
 const openai = require('./openai');
@@ -30,6 +31,7 @@ async function sendResponse(message, text=null, audioBuffer = null) {
   try {
     const delay = getRandomDelay();
     await new Promise(resolve => setTimeout(resolve, delay));
+    
     if(text){
       await message.reply(text);
     }
@@ -135,9 +137,9 @@ async function handleMessage(message) {
         console.log('✅ Resposta enviada: texto (TTS falhou para input áudio)');
       }
     } else {
-      // Input texto/imagem → resposta texto + TTS
-      await sendResponse(message, responseText, audioBuffer);
-      console.log('✅ Resposta enviada: texto + áudio');
+      // Input texto/imagem → resposta texto 
+      await sendResponse(message, responseText, null);
+      console.log('✅ Resposta enviada: texto');
     }
 
   } catch (error) {
@@ -152,13 +154,31 @@ async function handleMessage(message) {
 
 // Configurar event handlers
 function setupEventHandlers() {
-  client.on('qr', (qr) => {
+  client.on('qr', async (qr) => {
     console.log(config.prompts.status.qrGenerated);
     qrcode.generate(qr, { small: true });
+    currentQrCode = await qrCodeLib.toDataURL(qr);
+    isConnected = false;
+    connectedNumber = null;
   });
 
-  client.on('ready', () => {
+  client.on('ready', async () => {
     console.log(config.prompts.status.whatsappReady);
+    isConnected = true;
+    const info = client.info;
+    connectedNumber = info.wid.user;
+    currentQrCode = null;
+  });
+
+  client.on('disconnected', (reason) => {
+    console.log('WhatsApp desconectado:', reason);
+    isConnected = false;
+    connectedNumber = null;
+    currentQrCode = null;
+  });
+
+  client.on('authenticated', () => {
+    console.log('WhatsApp autenticado com sucesso');
   });
 
   client.on('message', handleMessage);
@@ -166,11 +186,42 @@ function setupEventHandlers() {
 
 // Inicializar WhatsApp
 async function initialize() {
-  setupEventHandlers();
-  await client.initialize();
+  try {
+    setupEventHandlers();
+    await client.initialize();
+  } catch (error) {
+    console.error('Erro ao inicializar WhatsApp:', error);
+    throw error;
+  }
+}
+
+function getStatus() {
+  return {
+    isConnected,
+    connectedNumber,
+    qrCode: currentQrCode
+  };
+}
+
+async function disconnect() {
+  try {
+    if (client && client.info) {
+      await client.logout();
+    }
+    await client.destroy();
+    isConnected = false;
+    connectedNumber = null;
+    currentQrCode = null;
+    return true;
+  } catch (error) {
+    console.error('Erro ao desconectar:', error);
+    return false;
+  }
 }
 
 module.exports = {
   initialize,
   client,
+  getStatus,
+  disconnect,
 };
