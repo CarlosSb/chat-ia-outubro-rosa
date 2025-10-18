@@ -7,7 +7,7 @@ const db = require('./database');
 const openai = require('./openai');
 
 const client = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
   puppeteer: {
     headless: true,
     args: config.whatsapp.puppeteerArgs,
