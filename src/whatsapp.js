@@ -11,6 +11,10 @@ const client = new Client({
   puppeteer: {
     headless: true,
     args: config.whatsapp.puppeteerArgs,
+  },
+  webVersionCache: {
+    type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
   }
 });
 
@@ -179,6 +183,18 @@ function setupEventHandlers() {
 
   client.on('authenticated', () => {
     console.log('WhatsApp autenticado com sucesso');
+  });
+
+  client.on('error', async (error) => {
+    console.error('Erro no cliente WhatsApp:', error);
+    // Auto-restart em caso de erro crítico
+    try {
+      await client.destroy();
+      console.log('Cliente destruído, reinicializando...');
+      setTimeout(() => initialize(), 5000); // Reinicializar após 5 segundos
+    } catch (destroyError) {
+      console.error('Erro ao destruir cliente:', destroyError);
+    }
   });
 
   client.on('message', handleMessage);

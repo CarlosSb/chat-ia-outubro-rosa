@@ -200,8 +200,26 @@ async function initializeApp() {
     // Criar/verificar tabela do banco
     await db.createTableIfNotExists();
 
-    // Inicializar WhatsApp
-    await whatsapp.initialize();
+    // Inicializar WhatsApp com retry em caso de erro
+    let whatsappRetries = 0;
+    const maxRetries = 3;
+
+    while (whatsappRetries < maxRetries) {
+      try {
+        await whatsapp.initialize();
+        break; // Sucesso, sair do loop
+      } catch (error) {
+        whatsappRetries++;
+        console.error(`Tentativa ${whatsappRetries}/${maxRetries} falhou:`, error.message);
+
+        if (whatsappRetries >= maxRetries) {
+          throw new Error(`Falhou após ${maxRetries} tentativas: ${error.message}`);
+        }
+
+        console.log('Aguardando 10 segundos antes de tentar novamente...');
+        await new Promise(resolve => setTimeout(resolve, 10000));
+      }
+    }
 
     // Iniciar servidor Express
     app.listen(config.server.port, () => {
