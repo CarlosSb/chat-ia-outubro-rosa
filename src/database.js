@@ -9,6 +9,7 @@ const pool = new Pool({
 // Criar tabela se não existir
 async function createTableIfNotExists() {
   try {
+    // Primeiro, criar tabela sem a coluna consented se ela não existir
     await pool.query(`
       CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY,
@@ -16,9 +17,17 @@ async function createTableIfNotExists() {
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         message_type VARCHAR(50) NOT NULL,
         content TEXT NOT NULL,
-        response TEXT
+        response TEXT,
+        consented BOOLEAN DEFAULT FALSE
       );
     `);
+
+    // Adicionar coluna consented se ela não existir
+    await pool.query(`
+      ALTER TABLE conversations
+      ADD COLUMN IF NOT EXISTS consented BOOLEAN DEFAULT FALSE;
+    `);
+
     console.log(config.prompts.status.tableCreated);
   } catch (error) {
     console.error(config.prompts.logErrors.tableCreation, error);
@@ -26,14 +35,14 @@ async function createTableIfNotExists() {
   }
 }
 
-// Verificar consentimento do usuário
+// Verificar consentimento do usuárioconsented
 async function getUserConsent(userId) {
   try {
     const result = await pool.query(
-      'SELECT content FROM conversations WHERE user_id = $1 AND message_type = $2 ORDER BY timestamp DESC LIMIT 1',
-      [userId, 'consent']
+      'SELECT consented FROM conversations WHERE user_id = $1 ORDER BY timestamp DESC LIMIT 1',
+      [userId]
     );
-    return result.rows.length > 0 && result.rows[0].content === 'SIM';
+    return result.rows.length > 0 ? result.rows[0].consented : false;
   } catch (error) {
     console.error(config.prompts.logErrors.consentCheck, error);
     return false;
@@ -68,12 +77,43 @@ async function getConversationHistory(userId) {
   }
 }
 
+// Atualizar consentimento do usuário
+async function updateConsent(userId, consented) {
+  try {
+    // Primeiro tenta fazer UPDATE
+    const updateResult = await pool.query(
+      'UPDATE conversations SET consented = $1 WHERE user_id = $2',
+      [consented, userId]
+    );
+
+    // Se nenhuma linha foi afetada, significa que o usuário não existe na tabela
+    // Então fazemos INSERT com consented = true
+    if (updateResult.rowCount === 0) {
+      await pool.query(
+        'INSERT INTO conversations (user_id, consented) VALUES ($1, $2)',
+        [userId, consented]
+      );
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar consentimento:', error);
+  }
+}
+
 // Salvar mensagem
 async function saveMessage(userId, messageType, content, response = null) {
   try {
+    // Primeiro, obter o valor atual de consented para este usuário
+    const currentConsent = await pool.query(
+      'SELECT consented FROM conversations WHERE user_id = $1 ORDER BY timestamp DESC LIMIT 1',
+      [userId]
+    );
+
+    const consentedValue = currentConsent.rows.length > 0 ? currentConsent.rows[0].consented : false;
+
+    // Inserir mensagem preservando o valor de consented
     await pool.query(
-      'INSERT INTO conversations (user_id, message_type, content, response) VALUES ($1, $2, $3, $4)',
-      [userId, messageType, content, response]
+      'INSERT INTO conversations (user_id, message_type, content, response, consented) VALUES ($1, $2, $3, $4, $5)',
+      [userId, messageType, content, response, consentedValue]
     );
   } catch (error) {
     console.error(config.prompts.logErrors.messageSave, error);
@@ -88,6 +128,7 @@ async function closeConnection() {
 module.exports = {
   createTableIfNotExists,
   getUserConsent,
+  updateConsent,
   checkRateLimit,
   getConversationHistory,
   saveMessage,

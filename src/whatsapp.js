@@ -69,9 +69,14 @@ async function handleMessage(message) {
     const hasConsent = await db.getUserConsent(userId);
     if (!hasConsent) {
       if (message.body.toUpperCase() === 'SIM') {
+        // Definir flag de consentimento como verdadeira
+        await db.updateConsent(userId, true);
+        // Salvar mensagem de consentimento
         await db.saveMessage(userId, 'consent', 'SIM');
+        // Responder confirmação
         await message.reply(config.prompts.consent.granted);
-        return;
+        console.log('✅ Consentimento definido + prosseguindo para IA');
+        // Não retorna - prossegue para processamento de IA na mesma mensagem
       } else {
         await message.reply(config.prompts.consent.request);
         return;
