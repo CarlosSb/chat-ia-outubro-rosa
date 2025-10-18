@@ -13,4 +13,10 @@ services:
           property: connectionString
       - key: PORT
         value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: CONFIG_TOKEN_HASH
+        sync: false
+      - key: TTS_VOICE
+        value: nova
     healthCheckPath: /health
