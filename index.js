@@ -278,10 +278,15 @@ async function initializeApp() {
       console.log(config.prompts.status.devTip);
     });
 
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    const PING_URL = isProduction
+      ? `http://${config.server.host}/health`
+      : `http://${config.server.host}:${config.server.port}/health`;
     // Estratégia anti-sleep: Ping keep-alive a cada 14 minutos
     cron.schedule('*/14 * * * *', async () => {
       try {
-        await fetch(`http://${config.server.host}/health`);
+        await fetch(`http://${config.server.host}:${config.server.port}/health`);
         console.log('Ping enviado');
       } catch (error) {
         console.error('Erro no ping keep-alive:', error);
