@@ -10,6 +10,8 @@ const openai = require('./openai');
 let isConnected = false;
 let connectedNumber = null;
 let currentQrCode = null;
+let lastQrGeneration = 0;
+const QR_GENERATION_COOLDOWN = 30000; // 30 segundos entre gerações de QR
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
@@ -169,9 +171,16 @@ async function handleMessage(message) {
 // Configurar event handlers
 function setupEventHandlers() {
   client.on('qr', async (qr) => {
+    const now = Date.now();
+    if (now - lastQrGeneration < QR_GENERATION_COOLDOWN) {
+      console.log('⏳ QR code gerado recentemente, pulando geração...');
+      return;
+    }
+
     console.log(config.prompts.status.qrGenerated);
     qrcode.generate(qr, { small: true });
     currentQrCode = await qrCodeLib.toDataURL(qr);
+    lastQrGeneration = now;
     isConnected = false;
     connectedNumber = null;
   });
@@ -184,12 +193,16 @@ function setupEventHandlers() {
     currentQrCode = null;
   });
 
-  client.on('disconnected', (reason) => {
+  client.on('disconnected', async(reason) => {
     console.log('WhatsApp desconectado:', reason);
     isConnected = false;
     connectedNumber = null;
     currentQrCode = null;
     console.log('Reconectando...');
+    if(reason === 'LOGOUT') {
+      await disconnect()
+      return; // Não reconectar após logout
+    }
     setTimeout(() => {
       client.destroy();
       client.initialize();
@@ -202,13 +215,59 @@ function setupEventHandlers() {
 
   client.on('error', async (error) => {
     console.error('Erro no cliente WhatsApp:', error);
-    // Auto-restart em caso de erro crítico
-    try {
-      await client.destroy();
-      console.log('Cliente destruído, reinicializando...');
-      setTimeout(() => initialize(), 5000); // Reinicializar após 5 segundos
-    } catch (destroyError) {
-      console.error('Erro ao destruir cliente:', destroyError);
+
+    // Verificar se é erro de desconexão abrupta do Puppeteer
+    const isPuppeteerError = error.message?.includes('Session closed') ||
+                            error.message?.includes('Target closed') ||
+                            error.message?.includes('Browser has disconnected') ||
+                            error.message?.includes('Protocol error') ||
+                            error.message?.includes('Connection lost');
+
+    if (isPuppeteerError) {
+      console.log('🔌 Detectada desconexão abrupta do dispositivo/browser');
+      console.log('🛡️ Limpando estado e preparando reinicialização segura...');
+
+      // Limpar estado imediatamente
+      isConnected = false;
+      connectedNumber = null;
+      currentQrCode = null;
+
+      // Aguardar um pouco antes de tentar destruir (evitar conflitos)
+      setTimeout(async () => {
+        try {
+          // Tentar destroy de forma segura
+          if (client && typeof client.destroy === 'function') {
+            await client.destroy();
+            console.log('✅ Cliente destruído com segurança');
+          }
+        } catch (destroyError) {
+          console.warn('⚠️ Erro ao destruir cliente (pode ser normal):', destroyError.message);
+        }
+
+        // Reinicializar após limpeza completa
+        console.log('🔄 Reinicializando cliente após desconexão abrupta...');
+        setTimeout(() => {
+          try {
+            initialize();
+            console.log('✅ Cliente reinicializado após desconexão abrupta');
+          } catch (initError) {
+            console.error('❌ Falha crítica na reinicialização:', initError);
+            // Em caso de falha crítica, tentar novamente após mais tempo
+            setTimeout(() => initialize(), 10000);
+          }
+        }, 3000);
+      }, 2000);
+
+    } else {
+      // Para outros tipos de erro, manter comportamento original
+      console.log('🔧 Erro não relacionado a desconexão abrupta, aplicando tratamento padrão');
+      try {
+        await client.destroy();
+        console.log('Cliente destruído, reinicializando...');
+        setTimeout(() => initialize(), 5000);
+      } catch (destroyError) {
+        console.error('Erro ao destruir cliente:', destroyError);
+      }
     }
   });
 
@@ -235,17 +294,89 @@ function getStatus() {
 }
 
 async function disconnect() {
+  console.log('🔌 Iniciando desconexão do WhatsApp...');
   try {
-    if (client && client.info) {
-      await client.logout();
+    console.log('🔌 Iniciando desconexão do WhatsApp...');
+
+    // Verificar se o cliente existe
+    if (!client) {
+      console.log('⚠️ Cliente não existe, limpando estado...');
+      isConnected = false;
+      connectedNumber = null;
+      currentQrCode = null;
+      return true;
     }
-    await client.destroy();
+
+    // Tentar logout se estiver conectado
+    if (isConnected && client.info) {
+      console.log('📤 Fazendo logout...');
+      try {
+        await client.logout();
+        console.log('✅ Logout realizado');
+      } catch (logoutError) {
+        console.warn('⚠️ Logout falhou, continuando com destroy:', logoutError.message);
+      }
+    }
+
+    // Destruir cliente
+    console.log('💥 Destruindo cliente...');
+    try {
+      await client.destroy();
+      console.log('✅ Cliente destruído');
+    } catch (destroyError) {
+      console.warn('⚠️ Destroy falhou:', destroyError.message);
+      // Propaga se crítico (ex.: destroy é essencial)
+      throw destroyError;
+    }
+
+    // Limpar cache de autenticação (async pra non-blocking)
+    const fs = require('fs').promises;
+    const path = require('path');
+    const authPath = path.join(__dirname, '..', '.wwebjs_auth');
+
+    try {
+      if (await fs.access(authPath).then(() => true).catch(() => false)) {
+        console.log('🗑️ Removendo cache de autenticação...');
+        await fs.rm(authPath, { recursive: true, force: true });
+        console.log('✅ Cache de autenticação removido');
+      } else {
+        console.log('ℹ️ Cache de autenticação não encontrado');
+      }
+    } catch (fsError) {
+      console.warn('⚠️ Erro ao remover cache:', fsError.message);
+    }
+
+    // Limpar estado
     isConnected = false;
     connectedNumber = null;
     currentQrCode = null;
+
+    // Reinicializar cliente para gerar novo QR code
+    console.log('🔄 Reinicializando cliente para gerar novo QR...');
+    try {
+      setTimeout(() => {
+        initialize();
+        console.log('✅ Cliente reinicializado, novo QR será gerado');
+      }, 1000); // Pequeno delay para garantir limpeza completa
+    } catch (initError) {
+      console.warn('⚠️ Erro ao reinicializar cliente:', initError.message);
+    }
+
+    console.log('✅ Desconexão completa realizada');
     return true;
   } catch (error) {
-    console.error('Erro ao desconectar:', error);
+    console.error('❌ Erro geral ao desconectar:', error);
+
+    // Sempre limpa estado, mesmo em erro
+    try {
+      isConnected = false;
+      connectedNumber = null;
+      currentQrCode = null;
+      console.log('⚠️ Estado limpo apesar do erro');
+    } catch (stateError) {
+      console.error('❌ Erro crítico ao limpar estado:', stateError);
+    }
+
     return false;
   }
 }

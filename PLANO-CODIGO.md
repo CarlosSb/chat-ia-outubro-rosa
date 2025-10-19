@@ -8,7 +8,7 @@ Atualizar com dependências e scripts:
 
 ```json
 {
-  "name": "novembro-rosa",
+  "name": "outubro-rosa",
   "version": "1.0.0",
   "description": "Bot WhatsApp POC para campanha Outubro Rosa com IA",
   "main": "index.js",
@@ -16,7 +16,7 @@ Atualizar com dependências e scripts:
     "start": "node index.js",
     "dev": "node index.js"
   },
-  "keywords": ["whatsapp", "bot", "ia", "novembro-rosa", "saude"],
+  "keywords": ["whatsapp", "bot", "ia", "outubro-rosa", "saude"],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -135,7 +135,7 @@ yarn-debug.log*
 ```
 services:
   - type: web
-    name: bot-novembro-rosa
+    name: bot-outubro-rosa
     env: node
     buildCommand: npm install
     startCommand: npm start
@@ -144,7 +144,7 @@ services:
         sync: false
       - key: DATABASE_URL
         fromDatabase:
-          name: bot-novembro-db
+          name: bot-outubro-db
           property: connectionString
       - key: PORT
         value: 10000

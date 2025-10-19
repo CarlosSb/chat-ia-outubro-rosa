@@ -4,7 +4,7 @@
 
 Conscientizar a população sobre a importância da prevenção e detecção precoce do câncer de mama através de um chatbot acessível via WhatsApp. Esta é uma parceria entre [sua organização/prefeitura] e tecnologia IA para promover saúde pública.
 
-**Duração da Campanha:** [Insira datas, ex.: 1 a 30 de novembro de 2025]
+**Duração da Campanha:** [Insira datas, ex.: 1 a 31 de outubro de 2025]
 
 ## Especialidades do Bot
 

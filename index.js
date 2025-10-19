@@ -46,6 +46,7 @@ app.get('/config', authenticateToken, (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuração WhatsApp - Bot Outubro Rosa</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -59,123 +60,172 @@ app.get('/config', authenticateToken, (req, res) => {
         .info p { margin: 5px 0; }
         .btn { background-color: #dc3545; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 5px; }
         .btn:hover { background-color: #c82333; }
-        .loading { display: none; color: #666; margin-top: 10px; }
+        .btn:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .loading { color: #666; margin-top: 10px; }
+        .loading-container { text-align: center; padding: 20px; }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #25D366;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        .loading-text { color: #666; font-size: 14px; margin-top: 10px; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="app" class="container">
         <h1>Configuração WhatsApp</h1>
 
-        <div id="status" class="status ${status.isConnected ? 'connected' : 'disconnected'}">
-            ${status.isConnected ?
-                '<strong>✅ Conectado</strong>' :
-                '<strong>❌ Desconectado</strong><br>Aguardando conexão...'
-            }
+        <div :class="['status', status.isConnected ? 'connected' : 'disconnected']">
+            <strong v-if="status.isConnected">✅ Conectado</strong>
+            <strong v-else-if="!status.isConnected && status.qrCode">📱 Gerando QR Code...</strong>
+            <strong v-else>⏳ Aguardando geração do QR Code...</strong>
         </div>
 
-        ${!status.isConnected && status.qrCode ?
-            '<div class="qr-container"><p><strong>Escaneie o QR Code abaixo com o WhatsApp:</strong></p><img src="' + status.qrCode + '" alt="QR Code WhatsApp" class="qr-code"></div>' :
-            ''
-        }
+        <transition name="fade">
+            <div v-if="!status.isConnected && status.qrCode" class="qr-container">
+                <p><strong>Escaneie o QR Code abaixo com o WhatsApp:</strong></p>
+                <img :src="status.qrCode" alt="QR Code WhatsApp" class="qr-code">
+            </div>
+            <div v-else-if="!status.isConnected && !status.qrCode" class="qr-container">
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p><strong>Aguarde, gerando QR Code...</strong></p>
+                    <p class="loading-text">Isso pode levar alguns segundos</p>
+                </div>
+            </div>
+        </transition>
 
-        ${status.isConnected ?
-            '<div class="info"><p><strong>📱 Informações da Conexão:</strong></p><p><strong>Número:</strong> +' + status.connectedNumber + '</p><p><strong>Data de Conexão:</strong> ' + new Date().toLocaleString('pt-BR') + '</p><p><strong>Dispositivo:</strong> WhatsApp Web</p><p><strong>Status:</strong> Ativo e respondendo mensagens</p></div><button class="btn" onclick="disconnect()">🔌 Desconectar e Limpar Cache</button><div id="loading" class="loading">Desconectando...</div>' :
-            '<div class="info"><p>O WhatsApp não está conectado. Escaneie o QR Code acima para conectar.</p></div>'
-        }
+        <transition name="fade">
+            <div v-if="status.isConnected" class="info">
+                <p><strong>📱 Informações da Conexão:</strong></p>
+                <p><strong>Número:</strong> +{{ status.connectedNumber }}</p>
+                <p><strong>Data de Conexão:</strong> {{ formatDate(new Date()) }}</p>
+                <p><strong>Dispositivo:</strong> WhatsApp Web</p>
+                <p><strong>Status:</strong> Ativo e respondendo mensagens</p>
+            </div>
+            <div v-else class="info">
+                <p>O WhatsApp não está conectado. Escaneie o QR Code acima para conectar.</p>
+            </div>
+        </transition>
+
+        <button v-if="status.isConnected" class="btn" @click="disconnect" :disabled="disconnecting">
+            🔌 Desconectar e Limpar Cache
+        </button>
+
+        <div v-if="disconnecting" class="loading">
+            Desconectando...
+        </div>
     </div>
 
     <script>
-        let currentStatus = ${JSON.stringify(status)};
+        const { createApp, ref, onMounted, onUnmounted } = Vue;
 
-        async function updateStatus() {
-            try {
-                const response = await fetch('/status?token=${req.query.token}');
-                const newStatus = await response.json();
+        createApp({
+            setup() {
+                const status = ref(${JSON.stringify(status)});
+                const disconnecting = ref(false);
+                const updateInterval = ref(null);
 
-                if (JSON.stringify(newStatus) !== JSON.stringify(currentStatus)) {
-                    currentStatus = newStatus;
-                    updateUI(newStatus);
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar status:', error);
-            }
-        }
+                const formatDate = (date) => {
+                    return date.toLocaleString('pt-BR');
+                };
 
-        function updateUI(status) {
-            const statusDiv = document.getElementById('status');
-            const qrContainer = document.querySelector('.qr-container');
-            const infoDiv = document.querySelector('.info');
-            const btn = document.querySelector('.btn');
+                const updateStatus = async () => {
+                    try {
+                        const response = await fetch('/status?token=${req.query.token}');
+                        const newStatus = await response.json();
 
-            if (status.isConnected) {
-                statusDiv.className = 'status connected';
-                statusDiv.innerHTML = '<strong>✅ Conectado</strong>';
-
-                if (qrContainer) qrContainer.style.display = 'none';
-                if (infoDiv) {
-                    infoDiv.innerHTML = '<p><strong>📱 Informações da Conexão:</strong></p><p><strong>Número:</strong> +' + status.connectedNumber + '</p><p><strong>Data de Conexão:</strong> ' + new Date().toLocaleString('pt-BR') + '</p><p><strong>Dispositivo:</strong> WhatsApp Web</p><p><strong>Status:</strong> Ativo e respondendo mensagens</p>';
-                }
-                if (btn) btn.style.display = 'inline-block';
-            } else {
-                statusDiv.className = 'status disconnected';
-                statusDiv.innerHTML = '<strong>❌ Desconectado</strong><br>Aguardando conexão...';
-
-                if (status.qrCode) {
-                    if (!qrContainer) {
-                        const newQrContainer = document.createElement('div');
-                        newQrContainer.className = 'qr-container';
-                        newQrContainer.innerHTML = '<p><strong>Escaneie o QR Code abaixo com o WhatsApp:</strong></p><img src="' + status.qrCode + '" alt="QR Code WhatsApp" class="qr-code">';
-                        statusDiv.insertAdjacentElement('afterend', newQrContainer);
-                    } else {
-                        qrContainer.style.display = 'block';
-                        qrContainer.innerHTML = '<p><strong>Escaneie o QR Code abaixo com o WhatsApp:</strong></p><img src="' + status.qrCode + '" alt="QR Code WhatsApp" class="qr-code">';
+                        // Só atualiza se houve mudança
+                        if (JSON.stringify(newStatus) !== JSON.stringify(status.value)) {
+                            status.value = newStatus;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao atualizar status:', error);
                     }
-                }
+                };
 
-                if (infoDiv) {
-                    infoDiv.innerHTML = '<p>O WhatsApp não está conectado. Escaneie o QR Code acima para conectar.</p>';
-                }
-                if (btn) btn.style.display = 'none';
-            }
-        }
+                const disconnect = async () => {
+                    if (!confirm('⚠️ Tem certeza que deseja desconectar o WhatsApp?\\n\\nIsso irá remover a conexão e limpar o cache. Você precisará escanear o QR Code novamente para reconectar.')) {
+                        return;
+                    }
 
-        async function disconnect() {
-            if (!confirm('⚠️ Tem certeza que deseja desconectar o WhatsApp?\\n\\nIsso irá remover a conexão e limpar o cache. Você precisará escanear o QR Code novamente para reconectar.')) {
-                return;
-            }
+                    disconnecting.value = true;
+                    console.log('Iniciando desconexão...');
 
-            const btn = document.querySelector('.btn');
-            const loading = document.getElementById('loading');
+                    try {
+                        const response = await fetch('/disconnect?token=${req.query.token}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ token: '${req.query.token}' })
+                        });
 
-            btn.disabled = true;
-            loading.style.display = 'block';
+                        console.log('Resposta da desconexão:', response);
 
-            try {
-                const response = await fetch('/disconnect', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ token: '${req.query.token}' })
+                        if (response.ok) {
+                            await updateStatus();
+                        } else {
+                            alert('❌ Erro ao desconectar. Tente novamente.');
+                        }
+                    } catch (error) {
+                        alert('❌ Erro de rede. Tente novamente.');
+                    } finally {
+                        disconnecting.value = false;
+                    }
+                };
+
+                const getPollingInterval = () => {
+                    if (!status.value.isConnected && status.value.qrCode) {
+                        // Quando gerando QR: atualização mais frequente para mostrar mudanças imediatas
+                        return 3000; // 3 segundos
+                    } else if (!status.value.isConnected) {
+                        // Quando desconectado sem QR: atualização frequente
+                        return 5000; // 5 segundos
+                    } else {
+                        // Quando conectado: atualização menos frequente
+                        return 30000; // 30 segundos
+                    }
+                };
+
+                const scheduleNextUpdate = () => {
+                    const interval = getPollingInterval();
+                    updateInterval.value = setTimeout(() => {
+                        updateStatus().then(() => {
+                            scheduleNextUpdate(); // Agenda a próxima atualização
+                        });
+                    }, interval);
+                };
+
+                onMounted(() => {
+                    // Inicia o polling inteligente
+                    scheduleNextUpdate();
                 });
 
-                if (response.ok) {
-                    updateStatus();
-                    loading.style.display = 'none';
-                } else {
-                    alert('❌ Erro ao desconectar. Tente novamente.');
-                    btn.disabled = false;
-                    loading.style.display = 'none';
-                }
-            } catch (error) {
-                alert('❌ Erro de rede. Tente novamente.');
-                btn.disabled = false;
-                loading.style.display = 'none';
-            }
-        }
+                onUnmounted(() => {
+                    if (updateInterval.value) {
+                        clearTimeout(updateInterval.value);
+                    }
+                });
 
-        // Atualizar status a cada 2 segundos
-        setInterval(updateStatus, 2000);
+                return {
+                    status,
+                    disconnecting,
+                    formatDate,
+                    disconnect
+                };
+            }
+        }).mount('#app');
     </script>
 </body>
 </html>`;
