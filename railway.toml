@@ -1,0 +1,21 @@
+[build]
+builder = "NIXPACKS"  # Default, mas força deps
+preBuildCommand = """
+  apt-get update && apt-get install -y \
+    libgobject-2.0-0 \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    fonts-liberation \
+    libgtk-3-0 \
+    libxss1
+"""
+
+[deploy]
+startCommand = "node index.js"
