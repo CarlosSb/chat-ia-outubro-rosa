@@ -281,7 +281,7 @@ async function initializeApp() {
     // Estratégia anti-sleep: Ping keep-alive a cada 14 minutos
     cron.schedule('*/14 * * * *', async () => {
       try {
-        await fetch(`http://localhost:${config.server.port}/health`);
+        await fetch(`http://${config.server.host}:${config.server.port}/health`);
         console.log('Ping enviado');
       } catch (error) {
         console.error('Erro no ping keep-alive:', error);
