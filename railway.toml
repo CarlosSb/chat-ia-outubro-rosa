@@ -1,20 +1,27 @@
 [build]
-builder = "NIXPACKS"  # Default, mas força deps
+builder = "NIXPACKS"
 preBuildCommand = """
-  apt-get update && apt-get install -y \
-    libgobject-2.0-0 \
-    libnss3 \
-    libatk-bridge2.0-0 \
-    libdrm2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    fonts-liberation \
-    libgtk-3-0 \
-    libxss1
+apt-get update && apt-get install -y \
+  libgobject-2.0-0 \
+  libnss3 \
+  libatk-bridge2.0-0 \
+  libdrm2 \
+  libxkbcommon0 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxrandr2 \
+  libgbm1 \
+  libasound2 \
+  fonts-liberation \
+  libgtk-3-0 \
+  libxss1 \
+  libatk1.0-0 \
+  libcairo-gobject2 \
+  libatspi2.0-0 \
+  libpango-1.0-0 \
+  libcairo2 \
+  libgdk-pixbuf2.0-0 \
+  libxrandr2
 """
 
 [deploy]
