@@ -63,6 +63,12 @@ async function sendResponse(message, text=null, audioBuffer = null) {
 // Processar mensagem recebida
 async function handleMessage(message) {
   try {
+    // Ignorar mensagens próprias
+    if (message.fromMe) return;
+
+    // IGNORAR MENSAGENS DE GRUPOS COMPLETAMENTE
+    if (message.from.endsWith('@g.us')) return;
+
     // Verificar horário comercial
     /*
     if (!isBusinessHours()) {
