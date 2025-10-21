@@ -22,6 +22,13 @@ function detectMessageContext(messageBody) {
   return 'geral';
 }
 
+// Função para obter período do dia
+function getPeriod() {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour < 12 ? 'manhã' : hour < 18 ? 'tarde' : 'noite';
+}
+
 // Processar mensagem de texto
 async function processTextMessage(message, history) {
   try {
@@ -31,13 +38,18 @@ async function processTextMessage(message, history) {
     // Usar prompt dinâmico baseado no contexto
     const dynamicPrompt = getDynamicPrompt(context);
 
+    // Obter horário atual BR
+    const currentTime = new Date().toLocaleTimeString('pt-BR');
+    const period = getPeriod();
+    const fullInput = message.body + ` (Horário atual BR: ${currentTime}, período: ${period})`;
+
     // Construir contexto completo
     let fullContext = dynamicPrompt + '\n\nHistórico da conversa:\n';
     history.forEach(item => {
       fullContext += `Usuário: ${item.content}\n`;
       if (item.response) fullContext += `Bot: ${item.response}\n`;
     });
-    fullContext += `Usuário: ${message.body}\nBot:`;
+    fullContext += `Usuário: ${fullInput}\nBot:`;
 
     const completion = await openai.chat.completions.create({
       model: config.openai.model,

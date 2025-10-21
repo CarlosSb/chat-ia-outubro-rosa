@@ -77,29 +77,46 @@ async function handleMessage(message) {
     }*/
 
     const userId = message.from;
+    const body = message.body.toLowerCase().trim();
+
+    // OPT-OUT: Se usuário disser 'SAIR', desabilitar consentimento
+    if (body === 'sair') {
+      await db.updateConsent(userId, false);
+      await message.reply('Entendi! Volte quando quiser 😊');
+      console.log('✅ Usuário fez opt-out');
+      return;
+    }
 
     // Verificar consentimento
     const hasConsent = await db.getUserConsent(userId);
     if (!hasConsent) {
-      if (message.body.toUpperCase() === 'SIM') {
-        // Definir flag de consentimento como verdadeira
-        await db.updateConsent(userId, true);
-        // Salvar mensagem de consentimento
-        await db.saveMessage(userId, 'consent', 'SIM');
-        // Responder confirmação
-        await message.reply(config.prompts.consent.granted);
-        console.log('✅ Consentimento definido + prosseguindo para IA');
-        // Não retorna - prossegue para processamento de IA na mesma mensagem
-      } else {
-        await message.reply(config.prompts.consent.request);
-        return;
-      }
+      // WELCOME VARIADO: Array de saudações acolhedoras
+      const welcomes = [
+        'Oi! 👋 Sou o Bot Rosa pro Outubro Rosa. Adoro ajudar com dúvidas sobre prevenção. O que você quer saber? 😊',
+        'Oi! Tudo bem? Aqui no Bot Rosa, falo de saúde mamária de forma simples. Me conta!',
+        'Olá! 💕 Bem-vindo ao Bot Outubro Rosa. Estou aqui pra tirar dúvidas sobre prevenção e cuidados. Qual sua pergunta?',
+        'Oi! Que bom você por aqui! Sou especialista em Outubro Rosa. Vamos conversar sobre saúde mamária? Me diz o que quer saber! 😊'
+      ];
+
+      const randomWelcome = welcomes[Math.floor(Math.random() * welcomes.length)];
+      await message.reply(randomWelcome);
+
+      // Auto-consent após welcome
+      await db.updateConsent(userId, true);
+      console.log('✅ Welcome enviado + auto-consent definido');
+      return;
     }
 
     // Verificar rate limit
     if (!(await db.checkRateLimit(userId))) {
       await message.reply(config.prompts.errors.rateLimit);
       return;
+    }
+
+    // DETECTAR SAUDAÇÕES: Responder casual antes de IA
+    if (body.includes('oi') || body.includes('bom dia') || body.includes('boa tarde') || body.includes('boa noite') || body.includes('olá')) {
+      await message.reply('Oi! Bom dia pra você também. Como posso te ajudar hoje com Outubro Rosa?');
+      return; // Não prossegue para IA em saudações simples
     }
 
     let responseText = '';
